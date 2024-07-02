@@ -1,113 +1,151 @@
-import Image from "next/image";
+"use client";
+import React, { useState } from 'react';
+import { Palette, Menu, X, AlertTriangle, AlertCircle, ThumbsUp, ChevronDown, User, Copy } from 'lucide-react';
 
-export default function Home() {
+const ThemePreview = () => {
+  const [theme, setTheme] = useState({
+    primary: '#1976D2',
+    secondary: '#FF4081',
+    background: '#FFFFFF',
+    surface: '#F5F5F5',
+    error: '#D32F2F',
+    warning: '#FFA000',
+    success: '#388E3C',
+    info: '#0288D1',
+    onPrimary: '#FFFFFF',
+    onSecondary: '#000000',
+    onBackground: '#000000',
+    onSurface: '#000000',
+    onError: '#FFFFFF',
+    onWarning: '#000000',
+    onSuccess: '#FFFFFF',
+    onInfo: '#FFFFFF',
+    accent: '#7C4DFF',
+  });
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [copyStatus, setCopyStatus] = useState('Copy Theme');
+
+  // Function to generate a random color within a specific hue range
+  const generateColorInRange = (hueStart, hueEnd) => {
+    const hue = Math.floor(Math.random() * (hueEnd - hueStart + 1)) + hueStart;
+    const saturation = Math.floor(Math.random() * 41) + 60; // 60-100%
+    const lightness = Math.floor(Math.random() * 21) + 40; // 40-60%
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  // Convert HSL to HEX
+  const hslToHex = (h, s, l) => {
+    l /= 100;
+    const a = s * Math.min(l, 1 - l) / 100;
+    const f = n => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  };
+
+  const changeTheme = () => {
+    const newTheme = {
+      primary: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+      secondary: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+      background: theme.background === '#FFFFFF' ? '#121212' : '#FFFFFF',
+      surface: theme.surface === '#F5F5F5' ? '#1E1E1E' : '#F5F5F5',
+      error: generateColorInRange(0, 10),    // Red hues
+      warning: generateColorInRange(25, 40), // Orange hues
+      success: generateColorInRange(100, 140), // Green hues
+      info: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+      accent: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+    };
+
+    // Convert HSL to HEX for error, warning, and success
+    newTheme.error = hslToHex(...newTheme.error.match(/\d+/g).map(Number));
+    newTheme.warning = hslToHex(...newTheme.warning.match(/\d+/g).map(Number));
+    newTheme.success = hslToHex(...newTheme.success.match(/\d+/g).map(Number));
+
+    // Generate contrasting colors for text
+    newTheme.onPrimary = getContrastText(newTheme.primary);
+    newTheme.onSecondary = getContrastText(newTheme.secondary);
+    newTheme.onBackground = newTheme.background === '#FFFFFF' ? '#000000' : '#FFFFFF';
+    newTheme.onSurface = newTheme.surface === '#F5F5F5' ? '#000000' : '#FFFFFF';
+    newTheme.onError = getContrastText(newTheme.error);
+    newTheme.onWarning = getContrastText(newTheme.warning);
+    newTheme.onSuccess = getContrastText(newTheme.success);
+    newTheme.onInfo = getContrastText(newTheme.info);
+
+    setTheme(newTheme);
+  };
+
+  const getContrastText = (bgColor) => {
+    const r = parseInt(bgColor.slice(1, 3), 16);
+    const g = parseInt(bgColor.slice(3, 5), 16);
+    const b = parseInt(bgColor.slice(5, 7), 16);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? '#000000' : '#FFFFFF';
+  };
+
+  const copyTheme = () => {
+    const themeJson = JSON.stringify(theme, null, 2);
+    navigator.clipboard.writeText(themeJson).then(() => {
+      setCopyStatus('Copied!');
+      setTimeout(() => setCopyStatus('Copy Theme'), 2000);
+    });
+  };
+
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: theme.background, color: theme.onBackground }}>
+      <nav className="flex justify-between items-center p-4" style={{ backgroundColor: theme.primary, color: theme.onPrimary }}>
+        <div className="text-xl font-bold">Theme Generator</div>
+        <div className="flex items-center space-x-4">
+          <button onClick={changeTheme} className="p-2 rounded-full" style={{ backgroundColor: theme.accent, color: getContrastText(theme.accent) }}>
+            <Palette size={24} />
+          </button>
+          <button 
+            onClick={copyTheme} 
+            className="p-2 rounded flex items-center" 
+            style={{ backgroundColor: theme.secondary, color: theme.onSecondary }}
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            <Copy size={24} />
+            <span className="ml-2">{copyStatus}</span>
+          </button>
+          <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
-      </div>
+      </nav>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+      <section className="py-16">
+        <h2 className="text-3xl font-bold text-center mb-8">Color Palette</h2>
+        <div className="flex flex-wrap justify-center gap-4 px-4">
+          {Object.entries(theme).map(([key, value]) => (
+            <div key={key} className="w-32 h-32 rounded-lg shadow-md flex flex-col justify-center items-center" style={{ backgroundColor: value, color: getContrastText(value) }}>
+              <div className="font-bold">{key}</div>
+              <div className="text-sm">{value}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      <section className="py-16" style={{ backgroundColor: theme.surface, color: theme.onSurface }}>
+        <h2 className="text-3xl font-bold text-center mb-8">Alert Examples</h2>
+        <div className="max-w-2xl mx-auto space-y-4 px-4">
+          {[
+            { type: 'error', icon: AlertCircle, message: 'This is an error alert', color: theme.error, textColor: theme.onError },
+            { type: 'warning', icon: AlertTriangle, message: 'This is a warning alert', color: theme.warning, textColor: theme.onWarning },
+            { type: 'success', icon: ThumbsUp, message: 'This is a success alert', color: theme.success, textColor: theme.onSuccess },
+            { type: 'info', icon: AlertCircle, message: 'This is an info alert', color: theme.info, textColor: theme.onInfo }
+          ].map((alert, index) => (
+            <div key={index} className="flex items-center p-4 rounded-lg" style={{ backgroundColor: alert.color, color: alert.textColor }}>
+              <alert.icon size={24} className="mr-4" />
+              <span>{alert.message}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
-}
+};
+
+export default ThemePreview;
